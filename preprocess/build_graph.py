@@ -125,7 +125,7 @@ word_doc_list = {}
 for i in range(len(shuffle_doc_words_list)):
     doc_words = shuffle_doc_words_list[i]
     words = doc_words.split()
-    appeared = set()
+    appeared = set()  ## For repeated word, skip. target is to find word 2 docment_list. only once is enough.
     for word in words:
         if word in appeared:
             continue

@@ -13,6 +13,7 @@ import numpy as np
 
 from utils.utils import *
 from models.gcn import GCN
+from models.gin import GIN
 from models.mlp import MLP
 
 from config import CONFIG
