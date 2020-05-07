@@ -27,13 +27,19 @@ class GraphConvolution(nn.Module):
         
     def forward(self, x):
         x = self.dropout(x)
-
+        print('len of support : ',len(self.support))
+        print('x size', x.size())
+        print('support size: ', self.support[0].size())
         for i in range(len(self.support)):
             if self.featureless:
-                pre_sup = getattr(self, 'W{}'.format(i))
+                # pre_sup = getattr(self, 'W{}'.format(i))
+                pre_sup = getattr(self, 'W{}'.format(0))
             else:
-                pre_sup = x.mm(getattr(self, 'W{}'.format(i)))
-            
+                # pre_sup = x.mm(getattr(self, 'W{}'.format(i)))
+                pre_sup = x.mm(getattr(self, 'W{}'.format(0)))
+
+            print('pre_sup size', pre_sup.size())
+
             if i == 0:
                 out = self.support[i].mm(pre_sup)
             else:

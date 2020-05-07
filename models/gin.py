@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 import torch
 import torch.nn as nn
-from mlp import MLP_for_GIN
+from models.mlp import MLP_for_GIN
+import time
 
 
 class GINConvolution(nn.Module):
     def __init__(self, input_dim, \
                  output_dim, \
                  support, \
-                 hidden_dim = 200,\
+                 hidden_dim = 64,\
                  act_func=None, \
                  featureless=False, \
                  dropout_rate=0., \
@@ -30,9 +31,9 @@ class GINConvolution(nn.Module):
         self.initial_eps = eps
         if train_eps:
             self.eps = torch.nn.Parameter(torch.Tensor([eps]))
-        self.reset_parameters()
 
     def forward(self, x):
+        start = time.time()
         x = self.dropout(x)
 
         # for i in range(len(self.support)):
@@ -46,12 +47,31 @@ class GINConvolution(nn.Module):
         #     else:
         #         out += self.support[i].mm(pre_sup)
         #
-        # if self.act_func is not None:
-        #     out = self.act_func(out)
 
-        x = x.unsqueeze(-1) if x.dim() == 1 else x
-        out = self.nn((1 + self.eps) * x + self.support.mm(x))
+
+        for i in range(len(self.support)):
+            if self.featureless:
+                if i ==0:
+                    AX = self.support[i]
+                else:
+                    AX+= self.support[i]
+            else:
+                if i == 0:
+                    AX = self.support[i].mm(x)
+                else:
+                    AX += self.support[i].mm(x)
+        print('Time comsuming for AX: %.2f s' % (start - time.time()))
+        batch_size = 128
+        if self.featureless:
+            out = self.nn(AX)
+        else:
+            out = self.nn(AX+(1+self.eps)*x)
+        # out=AX.mm(getattr(self, 'W{}'.format(0)))
+
+        if self.act_func is not None:
+            out = self.act_func(out)
         self.embedding = out
+        print('Time comsuming: %.2f s'%(start-time.time()))
         return out
 
 
@@ -63,9 +83,9 @@ class GIN(nn.Module):
         super(GIN, self).__init__()
 
         # GraphConvolution
-        self.layer1 = GINConvolution(input_dim, 200, support, act_func=nn.ReLU(), featureless=True,
-                                       dropout_rate=dropout_rate)
-        self.layer2 = GINConvolution(200, num_classes, support, dropout_rate=dropout_rate)
+        self.layer1 = GINConvolution(input_dim, 64, support, act_func=nn.ReLU(), featureless=True,
+                                       dropout_rate=dropout_rate,train_eps=True)
+        self.layer2 = GINConvolution(64, num_classes, support, dropout_rate=dropout_rate, train_eps=True)
 
     def forward(self, x):
         out = self.layer1(x)

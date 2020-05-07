@@ -51,6 +51,7 @@ features = sp.identity(features.shape[0])  # featureless
 
 # Some preprocessing
 features = preprocess_features(features)
+print(cfg.model)
 if cfg.model == 'gcn':
     support = [preprocess_adj(adj)]
     num_supports = 1
@@ -63,6 +64,10 @@ elif cfg.model == 'dense':
     support = [preprocess_adj(adj)]  # Not used
     num_supports = 1
     model_func = MLP
+elif cfg.model == 'gin':
+    support = [preprocess_adj(adj)]
+    num_supports = 1
+    model_func = GIN
 else:
     raise ValueError('Invalid argument for model: ' + str(cfg.model))
 

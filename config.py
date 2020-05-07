@@ -6,7 +6,7 @@ class CONFIG(object):
         super(CONFIG, self).__init__()
         
         self.dataset = 'R8'
-        self.model = 'gcn'  # 'gcn', 'gcn_cheby', 'dense'
+        self.model = 'gin'  # 'gcn', 'gcn_cheby', 'dense'
         self.learning_rate = 0.02   # Initial learning rate.
         self.epochs  = 200  # Number of epochs to train.
         self.hidden1 = 200  # Number of units in hidden layer 1.

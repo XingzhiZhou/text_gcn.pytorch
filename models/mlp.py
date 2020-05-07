@@ -35,7 +35,7 @@ class MLP_for_GIN(nn.Module):
             device: which device to use
         '''
 
-        super(MLP, self).__init__()
+        super(MLP_for_GIN, self).__init__()
 
         self.linear_or_not = True  # default is linear model
         self.num_layers = num_layers
