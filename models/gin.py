@@ -33,18 +33,19 @@ class GINConvolution(nn.Module):
         else:
             self.eps = eps
 
-    def forward(self, x):
+    def forward(self, x, selected_index):
         for i in range(len(self.support)):
+            A = self.support[i][selected_index]
             if self.featureless:
                 if i ==0:
-                    AX = self.support[i]
+                    AX = A
                 else:
-                    AX += self.support[i]
+                    AX += A
             else:
                 if i == 0:
-                    AX = self.support[i].mm(x)
+                    AX = A.mm(x)
                 else:
-                    AX += self.support[i].mm(x)
+                    AX += A.mm(x)
 
         if self.num_mlp_layers == 1:
             # out = AX.mm(self.w)
@@ -87,6 +88,7 @@ class GIN(nn.Module):
             self.classifier.append(nn.Linear(self.embed_dim,num_classes))
 
     def forward(self, x):
+
         hidden_rep = []
         h = x
         for i in range(0, self.num_layers-1):

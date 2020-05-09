@@ -125,17 +125,24 @@ def evaluate(features, labels, mask):
 val_losses = []
 
 # Train model
-import pdb
-pdb.set_trace()
+train_index = list()
+for i in range(tm_train_mask.size(0)):
+    if tm_train_mask[i,0] != 0:
+        train_index.append(i)
 
 
 for epoch in range(cfg.epochs):
-
+    selected_idx = np.random.permutation(len(train_index))[:cfg.batch_size]
+    selected_idx = [train_index[idx] for idx in selected_idx]
     t = time.time()
-    
+    selected_features = torch.cat([t_features[idx] for idx in selected_idx])
+    selected_y_train = torch.cat([t_y_train[idx] for idx in selected_idx])
     # Forward pass
-    logits = model(t_features)
-    loss = criterion(logits * tm_train_mask, torch.max(t_y_train, 1)[1])    
+    # logits = model(t_features)
+    # loss = criterion(logits * tm_train_mask, torch.max(t_y_train, 1)[1])
+    logits = model(selected_idx)
+    loss = criterion(logits, torch.max(selected_y_train,1)[1])
+
     acc = ((torch.max(logits, 1)[1] == torch.max(t_y_train, 1)[1]).float() * t_train_mask).sum().item() / t_train_mask.sum().item()
         
     # Backward and optimize
