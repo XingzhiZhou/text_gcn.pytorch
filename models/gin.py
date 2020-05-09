@@ -33,7 +33,7 @@ class GINConvolution(nn.Module):
                 else:
                     AX += self.support[i]
             else:
-                x = self.dropout(x)
+                # x = self.dropout(x)
                 if i == 0:
                     AX = self.support[i].mm(x)
                 else:
@@ -54,38 +54,41 @@ class GIN(nn.Module):
     def __init__(self, input_dim, \
                  support, \
                  dropout_rate = 0.5, \
-                 num_classes = 10):
+                 num_classes = 10,
+                 num_layers = 2,
+                 num_mlp_layers = 1,
+                 embed_dim = 200,
+                 hidden_dim_mlp = 200,
+                 train_eps = False):
         super(GIN, self).__init__()
-        self.num_layers = 2
-        self.embed_dim = 200
-        hidden_dim_MLP = 200
-        num_mlp_layers = 1
-        train_eps = False
+        self.num_layers = num_layers
 
         # GraphConvolution
         self.layers = nn.ModuleList()
 
-        for i in range(self.num_layers-1):
+        for i in range(num_layers-1):
             if i == 0:
                 self.layers.append(
-                    GINConvolution(input_dim,                                                         self.embed_dim,
+                    GINConvolution(input_dim,                                                         embed_dim,
                                    support,
-                                   hidden_dim=hidden_dim_MLP,
+                                   hidden_dim=hidden_dim_mlp,
                                    featureless=True,
-                                   train_eps=train_eps,                                               num_mlp_layers=1))
+                                   train_eps=train_eps,                                               num_mlp_layers=num_mlp_layers))
             else:
                 self.layers.append(
-                    GINConvolution(self.embed_dim,
-                                   self.embed_dim,
+                    GINConvolution(embed_dim,
+                                   embed_dim,
                                    support,
-                                   hidden_dim=hidden_dim_MLP,
+                                   hidden_dim=hidden_dim_mlp,
                                    train_eps=train_eps,
-                                   num_mlp_layers=num_mlp_layers)),\
+                                   num_mlp_layers=num_mlp_layers))
+
+
         self.layers.append(
-            GINConvolution(self.embed_dim,
+            GINConvolution(embed_dim,
                            num_classes,
                            support,
-                           hidden_dim=hidden_dim_MLP,
+                           hidden_dim=hidden_dim_mlp,
                            train_eps=train_eps,
                            num_mlp_layers=num_mlp_layers))
 
@@ -94,6 +97,7 @@ class GIN(nn.Module):
 
     def forward(self, x):
         h = x
-        for i in range(0, self.num_layers):
+        for i in range(0, self.num_layers-1):
             h = F.relu(self.layers[i](h))
-        return h
+        out = self.layers[-1](h)
+        return out

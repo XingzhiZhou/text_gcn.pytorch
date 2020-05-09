@@ -94,8 +94,20 @@ for i in range(len(support)):
 #     tm_train_mask = tm_train_mask.cuda()
 #     for i in range(len(support)):
 #         t_support = [t.cuda() for t in t_support if True]
-        
-model = model_func(input_dim=features.shape[0], support=t_support, num_classes=y_train.shape[1])
+if cfg.model == 'gin':
+    model = model_func(input_dim=features.shape[0],
+                       support=t_support,
+                       num_classes=y_train.shape[1],
+                       num_layers=cfg.num_layers,
+                       num_mlp_layers=cfg.num_mlp_layers,
+                       embed_dim=cfg.embed_dim,
+                       hidden_dim_mlp=cfg.hidden_dim_mlp,
+                       train_eps=cfg.train_eps
+                       )
+else:
+    model = model_func(input_dim=features.shape[0],
+                       support=t_support,
+                       num_classes=y_train.shape[1])
 
 
 # Loss and optimizer
@@ -160,6 +172,10 @@ print_log("Optimization Finished!")
 # Testing
 test_loss, test_acc, pred, labels, test_duration = evaluate(t_features, t_y_test, test_mask)
 print_log("Test set results: \n\t loss= {:.5f}, accuracy= {:.5f}, time= {:.5f}".format(test_loss, test_acc, test_duration))
+
+with open('./dataset_' + dataset + '_result.txt', 'w') as f:
+    f.write("Test set results: \n\t loss= {:.5f}, accuracy= {:.5f}, time= {:.5f}".format(test_loss, test_acc, test_duration))
+
 
 test_pred = []
 test_labels = []

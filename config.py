@@ -15,5 +15,11 @@ class CONFIG(object):
         self.early_stopping = 80 # Tolerance for early stopping (# of epochs).
         self.max_degree = 3      # Maximum Chebyshev polynomial degree.
 
+        self.num_layers = 2
+        self.num_mlp_layers = 1
+        self.embed_dim = 200
+        self.hidden_dim_mlp = 200
+        self.train_eps = False
+
 
 
