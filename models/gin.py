@@ -49,13 +49,8 @@ class GINConvolution(nn.Module):
         # out = AX.mm(self.w)
         if self.featureless:
             out = self.nn(AX)
-            # out = AX.mm(self.w)+0*(1+self.eps)*self.w
         else:
-            out = self.nn(AX)
-            # out = (AX + 0*(1+self.eps) * x).mm(self.w)
-        # else:
-        #     out = self.nn(AX * x)
-        #     # out = self.nn(AX+0*(1+self.eps)*x)
+            out = self.nn(AX+(1+self.eps)*x)
         self.embedding = out
         return out
 
@@ -70,30 +65,33 @@ class GIN(nn.Module):
         self.embed_dim = 64
         hidden_dim_MLP = 64
         num_mlp_layers = 2
-        self.dropout_rate = 0
         train_eps = True
         # GraphConvolution
         self.layers = nn.ModuleList()
 
-        for i in range(self.num_layers-1):
+        for i in range(self.num_layers):
             if i == 0:
                 self.layers.append(GINConvolution(input_dim, self.embed_dim, support,hidden_dim=hidden_dim_MLP, featureless=True, train_eps=train_eps,num_mlp_layers=1))
             else:
                 self.layers.append(
                     GINConvolution(self.embed_dim, self.embed_dim, support, hidden_dim=hidden_dim_MLP, train_eps=train_eps, num_mlp_layers=num_mlp_layers))
-        self.layers.append(GINConvolution(self.embed_dim, num_classes, support, hidden_dim=hidden_dim_MLP, train_eps=train_eps, num_mlp_layers=2))
+        # self.layers.append(GINConvolution(self.embed_dim, self.embed_dim, support, hidden_dim=hidden_dim_MLP, train_eps=train_eps, num_mlp_layers=num_mlp_layers))
 
 
         self.classifier = nn.ModuleList()
         for i in range(self.num_layers):
             self.classifier.append(nn.Linear(self.embed_dim,num_classes))
+        self.dropout = nn.Dropout(dropout_rate)
 
     def forward(self, x):
         hidden_rep = []
         h = x
-        for i in range(0, self.num_layers-1):
+        for i in range(0, self.num_layers):
             h = F.relu(self.layers[i](h))
             hidden_rep.append(h)
         self.layer1 = self.layers[0]
-        out = self.layers[-1](h)
+        out = 0
+        # for i in range(self.num_layers):
+        #     out += self.dropout(self.classifier[i](hidden_rep[i]))
+        out = self.classifier[-1](hidden_rep[-1])
         return out
