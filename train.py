@@ -101,7 +101,7 @@ model = model_func(input_dim=features.shape[0], support=t_support, num_classes=y
 # Loss and optimizer
 criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=cfg.learning_rate)
-scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=50, gamma=0.5)
+# scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=50, gamma=0.5)
 
 # Define model evaluation function
 def evaluate(features, labels, mask):
@@ -140,7 +140,7 @@ for epoch in range(cfg.epochs):
     optimizer.zero_grad()
     loss.backward()
     optimizer.step()
-    scheduler.step()
+    # scheduler.step()
 
     # Validation
     val_loss, val_acc, pred, labels, duration = evaluate(t_features, t_y_val, val_mask)
