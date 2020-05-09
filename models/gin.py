@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from models.mlp import MLP_for_GIN
 import time
 
@@ -13,81 +14,84 @@ class GINConvolution(nn.Module):
                  act_func=None, \
                  featureless=False, \
                  dropout_rate=0., \
-                 bias=False, num_mlp_layers=2, eps=0,train_eps=False):
+                 bias=False, num_mlp_layers=2, eps=-1,train_eps=False):
         super(GINConvolution, self).__init__()
         self.support = support
         self.featureless = featureless
-
-        for i in range(len(self.support)):
-            setattr(self, 'W{}'.format(i), nn.Parameter(torch.randn(input_dim, output_dim)))
-
+        self.num_mlp_layers = num_mlp_layers
         if bias:
             self.b = nn.Parameter(torch.zeros(1, output_dim))
 
-        self.act_func = act_func
-        self.dropout = nn.Dropout(dropout_rate)
+        if num_mlp_layers == 1:
+            self.w = nn.Parameter(torch.randn(input_dim,output_dim))
+        else:
+            self.nn = MLP_for_GIN(num_mlp_layers, input_dim, hidden_dim, output_dim)
 
-        self.nn = MLP_for_GIN(num_mlp_layers, input_dim, hidden_dim, output_dim)
-        self.initial_eps = eps
         if train_eps:
+            eps = 0.0001
             self.eps = torch.nn.Parameter(torch.Tensor([eps]))
+        else:
+            self.eps = eps
 
     def forward(self, x):
-        start = time.time()
-        x = self.dropout(x)
-
-        # for i in range(len(self.support)):
-        #     if self.featureless:
-        #         pre_sup = getattr(self, 'W{}'.format(i))
-        #     else:
-        #         pre_sup = x.mm(getattr(self, 'W{}'.format(i)))
-        #
-        #     if i == 0:
-        #         out = self.support[i].mm(pre_sup)
-        #     else:
-        #         out += self.support[i].mm(pre_sup)
-        #
-
-
         for i in range(len(self.support)):
             if self.featureless:
                 if i ==0:
                     AX = self.support[i]
                 else:
-                    AX+= self.support[i]
+                    AX += self.support[i]
             else:
                 if i == 0:
                     AX = self.support[i].mm(x)
                 else:
                     AX += self.support[i].mm(x)
-        print('Time comsuming for AX: %.2f s' % (start - time.time()))
-        batch_size = 128
-        if self.featureless:
-            out = self.nn(AX)
+
+        if self.num_mlp_layers == 1:
+            # out = AX.mm(self.w)
+            if self.featureless:
+                out = AX.mm(self.w)+0.1*(1+self.eps)*self.w
+            else:
+                out = (AX + 0.1*(1+self.eps) * x).mm(self.w)
         else:
             out = self.nn(AX+(1+self.eps)*x)
-        # out=AX.mm(getattr(self, 'W{}'.format(0)))
-
-        if self.act_func is not None:
-            out = self.act_func(out)
         self.embedding = out
-        print('Time comsuming: %.2f s'%(start-time.time()))
         return out
 
 
 class GIN(nn.Module):
     def __init__(self, input_dim, \
                  support, \
-                 dropout_rate=0., \
+                 dropout_rate=0.5, \
                  num_classes=10):
         super(GIN, self).__init__()
-
+        self.num_layers = 2
+        self.embed_dim = 200
+        hidden_dim_MLP = 200
+        num_mlp_layers = 1
+        self.dropout_rate = 0
+        train_eps = True
         # GraphConvolution
-        self.layer1 = GINConvolution(input_dim, 64, support, act_func=nn.ReLU(), featureless=True,
-                                       dropout_rate=dropout_rate,train_eps=True)
-        self.layer2 = GINConvolution(64, num_classes, support, dropout_rate=dropout_rate, train_eps=True)
+        self.layers = nn.ModuleList()
+
+        for i in range(self.num_layers-1):
+            if i == 0:
+                self.layers.append(GINConvolution(input_dim, self.embed_dim, support,hidden_dim=hidden_dim_MLP, featureless=True, train_eps=train_eps,num_mlp_layers=num_mlp_layers))
+            else:
+                self.layers.append(
+                    GINConvolution(self.embed_dim, self.embed_dim, support, hidden_dim=hidden_dim_MLP, train_eps=train_eps, num_mlp_layers=num_mlp_layers))
+        self.layers.append(GINConvolution(self.embed_dim, num_classes, support, hidden_dim=hidden_dim_MLP, train_eps=train_eps, num_mlp_layers=num_mlp_layers))
+
+
+        self.classifier = nn.ModuleList()
+        for i in range(self.num_layers):
+            self.classifier.append(nn.Linear(self.embed_dim,num_classes))
 
     def forward(self, x):
-        out = self.layer1(x)
-        out = self.layer2(out)
+        hidden_rep = []
+        h = x
+        for i in range(0, self.num_layers-1):
+            h = F.relu(self.layers[i](h))
+            hidden_rep.append(h)
+        self.layer1 = self.layers[0]
+        out = self.layers[-1](h)
         return out

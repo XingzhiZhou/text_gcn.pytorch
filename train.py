@@ -125,6 +125,10 @@ def evaluate(features, labels, mask):
 val_losses = []
 
 # Train model
+import pdb
+pdb.set_trace()
+
+
 for epoch in range(cfg.epochs):
 
     t = time.time()
