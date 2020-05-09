@@ -174,7 +174,6 @@ def load_corpus(dataset_str):
     y_test[test_mask, :] = labels[test_mask, :]
 
     adj = adj + adj.T.multiply(adj.T > adj) - adj.multiply(adj.T > adj)
-
     return adj, features, y_train, y_val, y_test, train_mask, val_mask, test_mask, train_size, test_size
 
 
