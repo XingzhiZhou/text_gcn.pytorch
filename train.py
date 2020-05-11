@@ -10,6 +10,7 @@ import torch
 import torch.nn as nn
 
 import numpy as np
+import argparse
 
 from utils.utils import *
 from models.gcn import GCN
@@ -19,12 +20,22 @@ from models.mlp import MLP
 from config import CONFIG
 cfg = CONFIG()
 
+parser = argparse.ArgumentParser(description='Pytorch implementation of GCN and GIN')
+parser.add_argument('data',help='path to dataset')
+parser.add_argument('--num_mlp_layers',default=1,type = int)
+parser.add_argument('--train_eps',action='store_true')
 
-if len(sys.argv) != 2:
-	sys.exit("Use: python train.py <dataset>")
+args = parser.parse_args()
+
+cfg.num_mlp_layers = args.num_mlp_layers
+cfg.train_eps = args.train_eps
+
+# if len(sys.argv) != 2:
+# 	sys.exit("Use: python train.py <dataset>")
 
 datasets = ['20ng', 'R8', 'R52', 'ohsumed', 'mr']
-dataset = sys.argv[1]
+dataset = args.data
+print('dataset %s'%datasets)
 
 if dataset not in datasets:
 	sys.exit("wrong dataset name")
@@ -32,7 +43,7 @@ cfg.dataset = dataset
 
 # Set random seed
 seed = random.randint(1, 200)
-seed = 2019
+# seed = 2019
 np.random.seed(seed)
 torch.manual_seed(seed)
 # if torch.cuda.is_available():
@@ -173,7 +184,7 @@ print_log("Optimization Finished!")
 test_loss, test_acc, pred, labels, test_duration = evaluate(t_features, t_y_test, test_mask)
 print_log("Test set results: \n\t loss= {:.5f}, accuracy= {:.5f}, time= {:.5f}".format(test_loss, test_acc, test_duration))
 
-with open('./dataset_' + dataset + '_result.txt', 'w') as f:
+with open('./' + dataset + 'num_mlp_layer%d'%cfg.num_mlp_layers+'_train_eps_%s'%cfg.train_eps+'.txt', 'a') as f:
     f.write("Test set results: \n\t loss= {:.5f}, accuracy= {:.5f}, time= {:.5f}".format(test_loss, test_acc, test_duration))
 
 
