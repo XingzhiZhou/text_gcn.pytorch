@@ -185,7 +185,7 @@ test_loss, test_acc, pred, labels, test_duration = evaluate(t_features, t_y_test
 print_log("Test set results: \n\t loss= {:.5f}, accuracy= {:.5f}, time= {:.5f}".format(test_loss, test_acc, test_duration))
 
 with open('./' + dataset + 'num_mlp_layer%d'%cfg.num_mlp_layers+'_train_eps_%s'%cfg.train_eps+'.txt', 'a') as f:
-    f.write("Test set results: \n\t loss= {:.5f}, accuracy= {:.5f}, time= {:.5f}".format(test_loss, test_acc, test_duration))
+    f.write("Test set results: \n\t loss= {:.5f}, accuracy= {:.5f}, time= {:.5f}\n".format(test_loss, test_acc, test_duration))
 
 
 test_pred = []
